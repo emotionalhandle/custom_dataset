@@ -1,294 +1,247 @@
 # Custom Dataset Workflow
 
-A comprehensive machine learning workflow for processing image datasets with Hydrus integration, JoyTag embeddings, and series classification.
+A comprehensive workflow for processing, analyzing, and detecting errors in image datasets using JoyTag embeddings and machine learning.
 
-## Overview
+## 🚀 Quick Start
 
-This repository contains a complete workflow for:
-1. **Dataset Mapping**: Extract image hashes from Hydrus database
-2. **JoyTag Processing**: Generate embeddings using JoyTag model
-3. **Series Classification**: Train classifiers on series tags
-4. **Web Interface**: Browse and manage predictions
+1. **Map your dataset:**
+   ```bash
+   python dataset_hardcore_mapper.py
+   ```
 
-## Architecture
+2. **Process with JoyTag:**
+   ```bash
+   python advanced_joytag_processing.py
+   ```
 
-```
-┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
-│   Hydrus DB     │───▶│  Dataset Mapper  │───▶│  JoyTag Model   │
-│   (Images)      │    │  (Extract Hash)   │    │  (Embeddings)   │
-└─────────────────┘    └──────────────────┘    └─────────────────┘
-                                │                         │
-                                ▼                         ▼
-                       ┌──────────────────┐    ┌─────────────────┐
-                       │  Series Tags     │    │  Classifier     │
-                       │  (Training)      │    │  (Training)     │
-                       └──────────────────┘    └─────────────────┘
-                                │                         │
-                                ▼                         ▼
-                       ┌─────────────────────────────────────────┐
-                       │           Web Interface                 │
-                       │      (Browse & Manage)                 │
-                       └─────────────────────────────────────────┘
-```
+3. **Train series classifier:**
+   ```bash
+   python train_series_classifier_images.py
+   ```
 
-## Components
+4. **Detect tagging errors:**
+   ```bash
+   python run_error_detection.py
+   ```
 
-### Core Scripts
+5. **Review errors in web interface:**
+   ```bash
+   python webapp/app.py
+   # Visit http://localhost:5000/error-review
+   ```
 
-- **`dataset_hardcore_mapper.py`**: Maps Hydrus dataset structure and extracts image hashes
-- **`advanced_joytag_processing.py`**: Processes images with JoyTag model to generate embeddings
-- **`train_series_classifier_images.py`**: Trains series classification models
+## 📁 Core Components
 
-### JoyTag Integration
+### Dataset Processing
+- **`dataset_hardcore_mapper.py`** - Maps Hydrus pages to image hashes
+- **`advanced_joytag_processing.py`** - Extracts JoyTag embeddings and metadata
+- **`train_series_classifier_images.py`** - Trains multi-label series classifier
 
-- **`joytag/Models.py`**: Core JoyTag model implementation
-- **`joytag/config.json`**: Model configuration
-- **`joytag/requirements.txt`**: JoyTag dependencies
+### Error Detection
+- **`find_mistagged_images.py`** - Detects missing or incorrect tags
+- **`find_near_duplicates.py`** - Finds near-duplicate images using embeddings
+- **`validate_series_predictions.py`** - Validates series classifier predictions
+- **`run_error_detection.py`** - Master script to run all error detection methods
 
 ### Web Interface
+- **`webapp/app.py`** - Flask web application for image analysis
+- **`webapp/templates/error_review.html`** - Interactive error review dashboard
 
-- **`webapp/app.py`**: Flask web application
-- **`webapp/templates/index.html`**: Main web interface
-- **`webapp/requirements.txt`**: Web app dependencies
+## 🔍 Error Detection Strategies
 
-### Configuration
+### 1. **Automated Tagging Error Detection**
+The `find_mistagged_images.py` script analyzes your processed data for common tagging issues:
 
-- **`config.py`**: Hydrus API configuration
-- **`requirements_iafd.txt`**: Additional dependencies
+- **Missing tags**: Images that should have certain tags based on content
+- **Incorrect tags**: Tags that don't match the image content
+- **Inconsistent tagging**: Similar images with different tag patterns
+- **Tag contradictions**: Conflicting tags on the same image
 
-## Installation
-
-### Prerequisites
-
-- Python 3.8+
-- PyTorch 2.0+
-- Hydrus client with API access
-- CUDA-capable GPU (recommended)
-
-### Setup
-
-1. **Clone the repository**:
-   ```bash
-   git clone https://github.com/emotionalhandle/custom_dataset.git
-   cd custom_dataset
-   ```
-
-2. **Install dependencies**:
-   ```bash
-   # Core dependencies
-   pip install torch torchvision torchaudio
-   pip install transformers einops safetensors pillow
-   pip install requests beautifulsoup4 lxml
-   pip install scikit-learn matplotlib seaborn
-   
-   # Web interface
-   cd webapp
-   pip install -r requirements.txt
-   cd ..
-   ```
-
-3. **Download JoyTag model**:
-   ```bash
-   # Download from HuggingFace (model.safetensors file)
-   # Place in joytag/ directory
-   ```
-
-4. **Configure Hydrus API**:
-   ```python
-   # Edit config.py with your Hydrus API settings
-   API_URL = "http://127.0.0.1:45869"
-   API_KEY = "your_api_key_here"
-   ```
-
-## Usage
-
-### 1. Dataset Mapping
-
-Extract image hashes from your Hydrus database:
-
+**Usage:**
 ```bash
-python dataset_hardcore_mapper.py
+python find_mistagged_images.py
 ```
 
-This creates:
-- `mappings/dataset_mapping_<timestamp>.json`: Complete dataset structure
-- `mappings/dataset_hashes_<timestamp>.txt`: List of all image hashes
+**Output:** `mistagged_images_report_<timestamp>.json`
 
-### 2. JoyTag Processing
+### 2. **Visual Similarity-Based Error Detection**
+The `find_near_duplicates.py` script uses JoyTag embeddings to find potential duplicates or mislabeled images:
 
-Generate embeddings for your images:
+- **Near-duplicate detection**: Images with high visual similarity
+- **Tag comparison**: Identifies inconsistent tagging between similar images
+- **Similarity analysis**: Computes cosine similarity between embeddings
 
+**Usage:**
 ```bash
-python advanced_joytag_processing.py [batch_size] [max_hashes]
+python find_near_duplicates.py
 ```
 
-Options:
-- `batch_size`: Number of images to process at once (default: 20)
-- `max_hashes`: Maximum number of hashes to process (default: 0 = all)
-- `--sample=1000`: Process only 1000 random images
-- `--no-cache`: Disable caching
-- `--force-regenerate`: Regenerate all embeddings
+**Output:** `near_duplicates_report_<timestamp>.json`
 
-Outputs:
-- `advanced_embeddings/`: Individual embedding files (`.pt`)
-- `advanced_joytag_complete_<timestamp>.json`: Complete processing results
+### 3. **Series Classification Validation**
+The `validate_series_predictions.py` script validates your series classifier predictions against existing tags:
 
-### 3. Series Classification Training
+- **Prediction accuracy**: Measures how well predictions match existing tags
+- **Missing predictions**: Series that exist in tags but weren't predicted
+- **Incorrect predictions**: Series that were predicted but don't exist in tags
+- **Confidence analysis**: Analyzes prediction confidence levels
 
-Train a series classifier on your data:
-
+**Usage:**
 ```bash
-python train_series_classifier_images.py [dataset_file] \
-    --frozen-epochs 3 \
-    --unfrozen-epochs 10 \
-    --unfreeze-last-k 1 \
-    --batch-size 32 \
-    --lr-head 1e-3 \
-    --lr-backbone 1e-4 \
-    --balance-method weighted \
-    --output-dir series_classifier_output_images
+python validate_series_predictions.py
 ```
 
-### 4. Web Interface
+**Output:** `series_validation_report_<timestamp>.json`
 
-Launch the web interface to browse results:
+### 4. **Interactive Web Dashboard**
+The web interface provides a user-friendly way to review and fix tagging errors:
 
+- **Error overview**: Statistics and summary of all detected errors
+- **Filtering**: Filter errors by type, confidence, or hash
+- **Visual review**: View images alongside their tags and predictions
+- **Manual fixes**: Mark errors as fixed or ignored
+
+**Usage:**
 ```bash
-cd webapp
-python app.py
+python webapp/app.py
+# Visit http://localhost:5000/error-review
 ```
 
-Access at: `http://localhost:5000`
-
-## Workflow Examples
-
-### Basic Processing Pipeline
-
-```bash
-# 1. Map your dataset
-python dataset_hardcore_mapper.py
-
-# 2. Process with JoyTag (sample 1000 images)
-python advanced_joytag_processing.py 20 0 --sample=1000
-
-# 3. Train classifier
-python train_series_classifier_images.py \
-    --frozen-epochs 3 \
-    --unfrozen-epochs 10 \
-    --batch-size 32
-
-# 4. Launch web interface
-cd webapp && python app.py
-```
-
-### Advanced Processing
-
-```bash
-# Process with custom settings
-python advanced_joytag_processing.py 50 5000 \
-    --sample-frac=0.1 \
-    --sample-seed=42 \
-    --recompute-tags
-
-# Train with specific configuration
-python train_series_classifier_images.py \
-    --frozen-epochs 5 \
-    --unfrozen-epochs 15 \
-    --unfreeze-last-k 2 \
-    --balance-method focal \
-    --focal-gamma 2.0 \
-    --focal-alpha 0.25
-```
-
-## File Structure
-
-```
-custom_dataset/
-├── dataset_hardcore_mapper.py      # Dataset mapping script
-├── advanced_joytag_processing.py  # JoyTag processing script
-├── train_series_classifier_images.py  # Training script
-├── config.py                      # Configuration
-├── requirements_iafd.txt          # Dependencies
-├── joytag/                        # JoyTag model files
-│   ├── Models.py
-│   ├── config.json
-│   ├── requirements.txt
-│   └── README.md
-├── webapp/                        # Web interface
-│   ├── app.py
-│   ├── requirements.txt
-│   └── templates/
-│       └── index.html
-├── mappings/                      # Generated mappings
-├── advanced_embeddings/           # Generated embeddings
-└── series_classifier_output_images/  # Training outputs
-```
-
-## Configuration
+## 🛠️ Configuration
 
 ### Hydrus API Settings
+Update `config.py` with your Hydrus API details:
 
-Edit `config.py`:
 ```python
-API_URL = "http://127.0.0.1:45869"  # Your Hydrus API URL
-API_KEY = "your_api_key_here"        # Your API key
-REQUEST_TIMEOUT = 30                 # Request timeout
+API_URL = "http://localhost:45869"
+API_KEY = "your_api_key_here"
 ```
 
 ### JoyTag Model
+The JoyTag model files are in the `joytag/` directory:
+- `Models.py` - Core model implementation
+- `config.json` - Model configuration
+- `requirements.txt` - Python dependencies
 
-The JoyTag model files should be placed in the `joytag/` directory:
-- `model.safetensors`: Main model weights (download from HuggingFace)
-- `config.json`: Model configuration (included)
-- `Models.py`: Model implementation (included)
+## 📊 Understanding Error Reports
 
-## Output Files
+### Mistagged Images Report
+```json
+{
+  "summary": {
+    "total_images_analyzed": 1000,
+    "errors_found": 45,
+    "missing_tags": 23,
+    "incorrect_tags": 22
+  },
+  "errors": [
+    {
+      "hash": "abc123...",
+      "issue": "missing_tags",
+      "missing_tags": ["person:jane_doe", "series:example_series"],
+      "confidence": 0.85
+    }
+  ]
+}
+```
 
-### Dataset Mapping
-- `mappings/dataset_mapping_<timestamp>.json`: Complete dataset structure
-- `mappings/dataset_hashes_<timestamp>.txt`: Hash list
+### Near Duplicates Report
+```json
+{
+  "summary": {
+    "total_pairs_found": 15,
+    "similarity_threshold": 0.95
+  },
+  "similar_pairs": [
+    {
+      "hash1": "abc123...",
+      "hash2": "def456...",
+      "similarity": 0.97,
+      "analysis": {
+        "series_tags_diff": {
+          "only_in_1": ["series:example_series"],
+          "only_in_2": []
+        }
+      }
+    }
+  ]
+}
+```
 
-### JoyTag Processing
-- `advanced_embeddings/<hash>.pt`: Individual embedding files
-- `advanced_joytag_complete_<timestamp>.json`: Processing results
-- `cache/advanced_joytag_cache.json`: Processing cache
+### Series Validation Report
+```json
+{
+  "summary": {
+    "total_predictions": 500,
+    "correct_predictions": 420,
+    "accuracy": 0.84,
+    "missing_predictions_count": 30,
+    "incorrect_predictions_count": 50
+  }
+}
+```
 
-### Training Outputs
-- `series_classifier_output_images/best_model.pth`: Trained model
-- `series_classifier_output_images/results.json`: Training results
-- `series_classifier_output_images/training_history.png`: Training curves
-- `series_classifier_output_images/class_metrics.png`: Class performance
+## 🎯 Best Practices
 
-## Troubleshooting
+### 1. **Regular Error Detection**
+Run error detection after major dataset updates:
+```bash
+python run_error_detection.py
+```
+
+### 2. **Review High-Confidence Errors First**
+Focus on errors with high confidence scores (≥0.8) as they're most likely to be real issues.
+
+### 3. **Use Visual Similarity for Duplicates**
+Check near-duplicate pairs for inconsistent tagging - this often reveals tagging errors.
+
+### 4. **Validate Series Predictions**
+Regularly check if your series classifier is making accurate predictions against existing tags.
+
+### 5. **Manual Review**
+Use the web dashboard for manual review of complex cases that automated detection might miss.
+
+## 🔧 Troubleshooting
 
 ### Common Issues
 
-1. **CUDA out of memory**: Reduce batch size in processing scripts
-2. **Hydrus API connection failed**: Check API URL and key in `config.py`
-3. **Model loading errors**: Ensure JoyTag model files are in correct location
-4. **Web interface not loading**: Check Flask dependencies and port availability
+**"No processed dataset found"**
+- Run `advanced_joytag_processing.py` first to create the dataset
+
+**"No embeddings found"**
+- Ensure the `advanced_embeddings/` directory exists and contains `.pt` files
+- Check that JoyTag processing completed successfully
+
+**"API connection failed"**
+- Verify your Hydrus API settings in `config.py`
+- Ensure Hydrus is running and accessible
+
+**"Model loading failed"**
+- Check that JoyTag model files are present in the `joytag/` directory
+- Verify all dependencies are installed: `pip install -r joytag/requirements.txt`
 
 ### Performance Tips
 
-- Use GPU acceleration for faster processing
-- Adjust batch sizes based on available memory
-- Use sampling for large datasets during development
-- Enable caching for repeated processing
+- **Limit embeddings**: Use `max_embeddings` parameter to limit processing for large datasets
+- **Batch processing**: Process errors in batches to avoid memory issues
+- **Caching**: Enable caching in the web interface for faster repeated access
 
-## Contributing
+## 📈 Next Steps
 
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Submit a pull request
+1. **Fix detected errors** using the web dashboard
+2. **Re-run error detection** to verify fixes
+3. **Monitor error trends** over time
+4. **Improve tagging consistency** based on findings
+5. **Update series classifier** with corrected data
 
-## License
+## 🤝 Contributing
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This workflow is designed to be extensible. You can:
+- Add new error detection methods
+- Customize the web interface
+- Integrate with other tools
+- Improve the JoyTag model
 
-## Acknowledgments
+## 📄 License
 
-- **JoyTag**: For the excellent vision model
-- **Hydrus**: For the powerful media management system
-- **PyTorch**: For the deep learning framework
-- **Flask**: For the web framework
+This project is open source and available under the MIT License.
